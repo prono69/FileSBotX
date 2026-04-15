@@ -3,6 +3,7 @@ import time
 from pyrogram import filters, Client
 from FileStream.bot import FileStream
 from pyrogram.types import Message
+from pyrogram.enums.parse_mode import ParseMode
 from FileStream.utils.bot_utils import verify_user
 from FileStream.utils.human_readable import humanbytes
 
