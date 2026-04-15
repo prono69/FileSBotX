@@ -10,7 +10,10 @@ from FileStream.utils.human_readable import humanbytes
 from FileStream.server.exceptions import FIleNotFound
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from pyrogram.file_id import FileId, FileType, PHOTO_TYPES
+from FileStream.bot.plugins.usage import build_usage_text, usage_keyboard
 from pyrogram.enums.parse_mode import ParseMode
+
+
 db = Database(Telegram.DATABASE_URL, Telegram.SESSION_NAME)
 
 #---------------------[ START CMD ]---------------------#
@@ -83,6 +86,11 @@ async def cb_data(bot, update: CallbackQuery):
         file_name = myfile['file_name']
         await update.answer(f"Sending File {file_name}")
         await update.message.reply_cached_media(myfile['file_id'], caption=f'**{file_name}**')
+    elif usr_cmd[0] == "usage":
+        if len(usr_cmd) > 1 and usr_cmd[1] == "refresh":
+            text = build_usage_text()
+            await update.message.edit_text(text=text,parse_mode=ParseMode.HTML,reply_markup=usage_keyboard())
+            await update.answer("🔄 Updated!")
     else:
         await update.message.delete()
 
