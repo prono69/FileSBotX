@@ -41,7 +41,7 @@ async def index_handler(request):
     data = {
         "server_status": "running",
         "uptime": utils.get_readable_time(time.time() - StartTime),
-        "telegram_bot": "@" + FileStream.username,
+        "telegram_bot": "@" + FileStream.first_name,
         "connected_bots": len(multi_clients),
         "version": __version__,
         "loads": dict(
