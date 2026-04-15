@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FileStream — Status</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #04050a;
+      --surface: #0c0e18;
+      --card: #111422;
+      --border: rgba(99, 179, 237, 0.12);
+      --accent: #63b3ed;
+      --accent2: #76e4f7;
+      --accent3: #9f7aea;
+      --green: #68d391;
+      --text: #e2e8f0;
+      --muted: #718096;
+      --glow: rgba(99, 179, 237, 0.15);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background ── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(99,179,237,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,179,237,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .bg-orb {
+      position: fixed; border-radius: 50%; filter: blur(120px);
+      pointer-events: none; z-index: 0;
+    }
+    .bg-orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(99,179,237,0.08), transparent 70%);
+      top: -100px; left: -100px;
+      animation: orbFloat1 12s ease-in-out infinite;
+    }
+    .bg-orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(159,122,234,0.07), transparent 70%);
+      bottom: -100px; right: -100px;
+      animation: orbFloat2 15s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(60px, 40px); }
+    }
+    @keyframes orbFloat2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-40px, -60px); }
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(104, 211, 145, 0.1);
+      border: 1px solid rgba(104, 211, 145, 0.25);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--green);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #e2e8f0 0%, var(--accent) 50%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 400;
+      max-width: 420px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(99,179,237,0.3);
+      transform: translateY(-3px);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .stat-card:hover::before { opacity: 1; }
+
+    .stat-icon {
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-value.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .stat-value.green { color: var(--green); }
+    .stat-value.blue { color: var(--accent); }
+    .stat-value.purple { color: var(--accent3); }
+    .stat-value.cyan { color: var(--accent2); }
+
+    /* ── Section ── */
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Bot username ── */
+    .bot-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(99,179,237,0.05);
+      border: 1px solid rgba(99,179,237,0.15);
+      border-radius: 12px;
+    }
+
+    .bot-avatar {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .bot-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .bot-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 2px;
+    }
+
+    /* ── Loads bar ── */
+    .load-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .load-item:last-child { margin-bottom: 0; }
+
+    .load-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      width: 44px;
+      flex-shrink: 0;
+    }
+
+    .load-bar-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .load-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .load-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── Version pill ── */
+    .version-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(159,122,234,0.1);
+      border: 1px solid rgba(159,122,234,0.2);
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--accent3);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .footer p {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Loading state ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--card) 25%, rgba(255,255,255,0.04) 50%, var(--card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      height: 1.2em;
+      width: 80%;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    .delay-6 { animation-delay: 0.6s; }
+    .delay-7 { animation-delay: 0.7s; }
+
+    /* ── Error state ── */
+    .error-msg {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span id="status-text">Checking status...</span>
+    </div>
+    <h1>FileStream Bot</h1>
+    <p class="subtitle">High-speed Telegram file streaming. Your files, delivered instantly via direct links.</p>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card delay-1">
+      <span class="stat-icon">⏱</span>
+      <div class="stat-label">Uptime</div>
+      <div class="stat-value mono cyan" id="val-uptime"><span class="skeleton"></span></div>
+    </div>
+    <div class="stat-card delay-2">
+      <span class="stat-icon">🤖</span>
+      <div class="stat-label">Connected Bots</div>
+      <div class="stat-value blue" id="val-bots"><span class="skeleton"></span></div>
+    </div>
+    <div class="stat-card delay-3">
+      <span class="stat-icon">✦</span>
+      <div class="stat-label">Version</div>
+      <div class="stat-value purple mono" id="val-version"><span class="skeleton"></span></div>
+    </div>
+    <div class="stat-card delay-4">
+      <span class="stat-icon">💚</span>
+      <div class="stat-label">Server</div>
+      <div class="stat-value green" id="val-status"><span class="skeleton"></span></div>
+    </div>
+  </div>
+
+  <!-- Bot Info -->
+  <div class="section delay-4">
+    <div class="section-title">Telegram Bot</div>
+    <div class="bot-row">
+      <div class="bot-avatar">✈️</div>
+      <div>
+        <div class="bot-name" id="val-botname">Loading...</div>
+        <div class="bot-sub">Telegram File Stream Bot</div>
+      </div>
+      <div style="margin-left: auto;">
+        <span class="version-pill" id="val-version2">v—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Distribution -->
+  <div class="section delay-5">
+    <div class="section-title">Bot Load Distribution</div>
+    <div id="loads-container">
+      <div class="error-msg">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer delay-7">
+    <p>Last refreshed: <span id="last-refresh">—</span> · Auto-refreshes every 30s</p>
+  </div>
+
+</div>
+
+<script>
+  // Data injected server-side by Jinja2
+  const STATUS_DATA = {
+    server_status: "{{ server_status }}",
+    uptime: "{{ uptime }}",
+    telegram_bot: "{{ telegram_bot }}",
+    connected_bots: { { connected_bots } },
+    version: "{{ version }}",
+    loads: {
+      { % for bot, load in loads.items() % }
+      "{{ bot }}": { { load } } { % if not loop.last % },
+      { % endif % } { % endfor % }
+    }
+  };
+  
+  function animateBars() {
+    document.querySelectorAll('.load-bar-fill').forEach(bar => {
+      const target = bar.dataset.target;
+      setTimeout(() => { bar.style.width = target + '%'; }, 100);
+    });
+  }
+  
+  function renderLoads(loads) {
+    const container = document.getElementById('loads-container');
+    if (!loads || Object.keys(loads).length === 0) {
+      container.innerHTML = '<div class="error-msg">No bots connected</div>';
+      return;
+    }
+    const entries = Object.entries(loads);
+    const max = Math.max(...entries.map(([, v]) => v), 1);
+    container.innerHTML = entries.map(([bot, count]) => {
+      const pct = Math.round((count / max) * 100);
+      return `
+        <div class="load-item">
+          <span class="load-label">${bot}</span>
+          <div class="load-bar-track">
+            <div class="load-bar-fill" data-target="${pct}"></div>
+          </div>
+          <span class="load-count">${count}</span>
+        </div>`;
+    }).join('');
+    animateBars();
+  }
+  
+  function updateUI(data) {
+    document.getElementById('status-text').textContent = 'All Systems Operational';
+    document.getElementById('val-uptime').textContent = data.uptime || '—';
+    document.getElementById('val-bots').textContent = data.connected_bots ?? '—';
+    document.getElementById('val-version').textContent = 'v' + (data.version || '—');
+    document.getElementById('val-status').textContent = 'Running';
+    document.getElementById('val-botname').textContent = data.telegram_bot || '—';
+    document.getElementById('val-version2').textContent = 'v' + (data.version || '—');
+    document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
+    renderLoads(data.loads);
+  }
+  
+  // Render immediately with server-side data
+  updateUI(STATUS_DATA);
+  
+  // Still auto-refresh every 30s via fetch for live updates
+  async function refresh() {
+    try {
+      const res = await fetch('/status');
+      const data = await res.json();
+      updateUI(data);
+      document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
+    } catch (e) {}
+  }
+  setInterval(refresh, 30000);
+</script>
+</body>
+</html>

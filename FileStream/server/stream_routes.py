@@ -1,9 +1,11 @@
+import os
 import time
 import math
 import logging
 import mimetypes
 import traceback
 from aiohttp import web
+from jinja2 import Environment, FileSystemLoader
 from aiohttp.http_exceptions import BadStatusLine
 from FileStream.bot import multi_clients, work_loads, FileStream
 from FileStream.config import Telegram, Server
@@ -12,6 +14,9 @@ from FileStream import utils, StartTime, __version__
 from FileStream.utils.render_template import render_page
 
 routes = web.RouteTableDef()
+template_env = Environment(
+    loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "../template"))
+)
 
 @routes.get("/status", allow_head=True)
 async def root_route_handler(_):
@@ -30,6 +35,25 @@ async def root_route_handler(_):
             "version": __version__,
         }
     )
+
+@routes.get("/", allow_head=True)
+async def index_handler(request):
+    data = {
+        "server_status": "running",
+        "uptime": utils.get_readable_time(time.time() - StartTime),
+        "telegram_bot": "@" + FileStream.username,
+        "connected_bots": len(multi_clients),
+        "version": __version__,
+        "loads": dict(
+            ("bot" + str(c + 1), l)
+            for c, (_, l) in enumerate(
+                sorted(work_loads.items(), key=lambda x: x[1], reverse=True)
+            )
+        ),
+    }
+    template = template_env.get_template("index.html")
+    html = template.render(**data)
+    return web.Response(text=html, content_type="text/html")    
 
 @routes.get("/watch/{path}", allow_head=True)
 async def stream_handler(request: web.Request):
