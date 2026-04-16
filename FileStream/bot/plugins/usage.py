@@ -33,7 +33,7 @@ def build_usage_text():
     text = (
         "<b>╭━━━〔 ⚡ SYSTEM DASHBOARD ⚡ 〕━━━╮</b>\n\n"
 
-        f"⏱ <b>Uptime:</b> <code>{get_readable_time(uptime)}s</code>\n\n"
+        f"⏱ <b>Uptime:</b> <code>{get_readable_time(uptime)}</code>\n\n"
 
         "🖥️ <b>CPU Usage</b>\n"
         f"├ <code>{cpu_usage:.1f}%</code>\n"
